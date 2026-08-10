@@ -11,6 +11,15 @@ audit logging, RBAC, MFA, consent tracking) are implemented to **demonstrate** a
 HIPAA-conscious posture — see `docs/compliance-checklist.md` — but this system has
 not been certified or audited and must not be used with real patient data.
 
+## Screenshots
+
+| | |
+|---|---|
+| **Landing page** ![Landing page](docs/screenshots/landing.png) | **Login** ![Login](docs/screenshots/login.png) |
+| **Patient dashboard** ![Patient dashboard](docs/screenshots/patient-dashboard.png) | **Doctor — encounter chart** ![Doctor encounter chart](docs/screenshots/doctor-encounter-chart.png) |
+| **Receptionist — scheduling & dispatch** ![Receptionist dashboard](docs/screenshots/receptionist-dashboard.png) | **Nurse — live bed board** ![Nurse bed board](docs/screenshots/nurse-bed-board.png) |
+| **Admin — analytics** ![Admin analytics](docs/screenshots/admin-analytics.png) | **AI symptom checker** ![Symptom checker](docs/screenshots/symptom-checker.png) |
+
 ## Stack
 
 - **backend/** — Node 20, Express, TypeScript (ESM), Postgres (`pg`), Redis
@@ -40,8 +49,8 @@ Database migrations run automatically before the backend starts (see
 
 ## Build phases
 
-See `docs/roadmap.md` for the phased build plan. Each phase is independently
-demoable; the system is being built phase-by-phase rather than all at once.
+See `docs/roadmap.md` for the phased build plan — all six phases are complete;
+each phase is independently demoable.
 
 ## Roles
 
