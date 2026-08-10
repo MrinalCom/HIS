@@ -1,0 +1,11 @@
+{
+  "modelVersion": "noshow-logreg-v1",
+  "features": [
+    "lead_time_hours",
+    "hour_of_day",
+    "day_of_week",
+    "prior_noshow_rate",
+    "is_telemedicine"
+  ],
+  "heldOutAuc": 0.698
+}

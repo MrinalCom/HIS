@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.next/
+.env
+*.log
+*.tsbuildinfo
+ml-service/training/data/
+ml-service/app/__pycache__/
+**/__pycache__/
+.DS_Store
