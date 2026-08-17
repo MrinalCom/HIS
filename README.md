@@ -1,5 +1,15 @@
 # HIS — Hospital Information System (portfolio project)
 
+**Live:** [frontend](https://his-frontend-nine.vercel.app) ·
+[backend](https://his-backend-nine.vercel.app/health) — deployed on Vercel with a live Neon
+Postgres database; verified with a real end-to-end registration request. Both are deployed
+and independently working; the frontend UI doesn't currently call the backend API anywhere
+in its source, so they're live but not yet wired together — that's a frontend
+feature-building gap, not a deployment one. The ML no-show-prediction service and MinIO
+object storage referenced in `docker-compose.yml` aren't wired into the deployed backend —
+the code never actually called MinIO, and the no-show ML service is a single optional
+feature, not required for the rest of the app.
+
 A full-stack + AI Hospital Information System: patient registration, multi-doctor
 scheduling, EHR, pharmacy, lab, billing, HR, bed/ward management, ambulance
 dispatch, telemedicine, and four AI features (triage chatbot, booking concierge,

@@ -3,7 +3,6 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { authenticator } from "otplib";
 import { pool } from "../../config/db.js";
-import { redis } from "../../config/redis.js";
 import { env } from "../../config/env.js";
 import type { Role } from "./permissions.js";
 
@@ -70,20 +69,28 @@ function accessToken(user: User, mfaVerified: boolean): string {
   return jwt.sign(
     { id: user.id, role: user.role, mfaVerified },
     env.jwtAccessSecret,
-    { expiresIn: env.accessTokenTtl }
+    // env.accessTokenTtl is a plain `"15m"`-shaped string, widened to
+    // `string` by inference; jsonwebtoken's expiresIn wants a branded
+    // StringValue TS can't verify a `string` matches -- same pre-existing
+    // type gap as refreshToken() above.
+    { expiresIn: env.accessTokenTtl as jwt.SignOptions["expiresIn"] }
   );
 }
 
 async function refreshToken(userId: string): Promise<string> {
   const jti = crypto.randomUUID();
   const token = jwt.sign({ id: userId, jti }, env.jwtRefreshSecret, {
-    expiresIn: `${env.refreshTokenTtlDays}d`,
+    // A computed template string isn't assignable to jsonwebtoken's
+    // StringValue-typed `expiresIn` (TS can't verify it matches "${number}d"
+    // at compile time), so pass whole seconds instead -- pre-existing type
+    // error unrelated to the Redis->SQL change above, fixed while touching
+    // this function.
+    expiresIn: env.refreshTokenTtlDays * 24 * 60 * 60,
   });
-  await redis.set(
-    `refresh:${jti}`,
-    userId,
-    "EX",
-    env.refreshTokenTtlDays * 24 * 60 * 60
+  await pool.query(
+    `INSERT INTO refresh_tokens (jti, user_id, expires_at)
+     VALUES ($1, $2, now() + ($3 || ' days')::interval)`,
+    [jti, userId, env.refreshTokenTtlDays]
   );
   return token;
 }
@@ -116,11 +123,15 @@ export function verifyMfaPendingToken(token: string): string {
 // refresh has happened.
 export async function rotateRefreshToken(token: string) {
   const payload = jwt.verify(token, env.jwtRefreshSecret) as { id: string; jti: string };
-  const storedUserId = await redis.get(`refresh:${payload.jti}`);
+  const stored = await pool.query<{ user_id: string }>(
+    `SELECT user_id FROM refresh_tokens WHERE jti = $1 AND expires_at > now()`,
+    [payload.jti]
+  );
+  const storedUserId = stored.rows[0]?.user_id;
   if (!storedUserId || storedUserId !== payload.id) {
     throw new Error("Refresh token revoked or expired");
   }
-  await redis.del(`refresh:${payload.jti}`);
+  await pool.query(`DELETE FROM refresh_tokens WHERE jti = $1`, [payload.jti]);
   const user = await findUserById(payload.id);
   if (!user || !user.is_active) throw new Error("User not found or inactive");
   return {
@@ -133,7 +144,7 @@ export async function rotateRefreshToken(token: string) {
 export async function revokeRefreshToken(token: string) {
   try {
     const payload = jwt.verify(token, env.jwtRefreshSecret) as { jti: string };
-    await redis.del(`refresh:${payload.jti}`);
+    await pool.query(`DELETE FROM refresh_tokens WHERE jti = $1`, [payload.jti]);
   } catch {
     // already invalid/expired — nothing to revoke
   }
